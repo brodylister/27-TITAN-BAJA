@@ -1,17 +1,25 @@
 name: CI
 
 # Runs on every push and every pull request targeting main.
-# Catches compile errors and common bugs before code is merged.
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
 
+# A new push to the same branch/PR cancels the stale run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    name: Build (PlatformIO / Teensy 4.1)
+    name: Build (${{ matrix.env }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false          # one broken target shouldn't hide the others
+      matrix:
+        env: [ teensyWhite, teensyBlue, teensyOrange ]
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
@@ -22,34 +30,55 @@ jobs:
           python-version: '3.11'
 
       - name: Install PlatformIO
-        run: pip install --upgrade platformio
+        run: pip install platformio
 
       - name: Cache PlatformIO packages
         uses: actions/cache@v4
         with:
-          path: ~/.platformio
+          path: |
+            ~/.platformio
+            .pio/libdeps
           key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: pio-${{ runner.os }}-
 
-      # Adjust "teensy41" if your platformio.ini env is named differently.
       - name: Build firmware
-        run: pio run -e teensy41
+        run: pio run -e ${{ matrix.env }}
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.env }}
+          path: .pio/build/${{ matrix.env }}/firmware.hex
 
   static-analysis:
-    name: Static analysis (cppcheck)
+    name: Static analysis (${{ matrix.env }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [ teensyWhite, teensyBlue, teensyOrange ]
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Install cppcheck
-        run: sudo apt-get update && sudo apt-get install -y cppcheck
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      # --error-exitcode=1 makes the job fail (red X) if cppcheck finds real issues,
-      # not just style nits. Adjust src/include paths to match your repo layout.
-      - name: Run cppcheck
-        run: |
-          cppcheck --enable=warning,performance,portability \
-                    --inline-suppr \
-                    --error-exitcode=1 \
-                    -I include \
-                    src/
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            .pio/libdeps
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: pio-${{ runner.os }}-
+
+      # pio check runs cppcheck under the hood, but with the env's real
+      # include paths and source filter, so it analyzes only that firmware's files.
+      - name: Run static analysis
+        run: pio check -e ${{ matrix.env }} --fail-on-defect=high --skip-packages

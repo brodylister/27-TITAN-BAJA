@@ -30,3 +30,51 @@ The current system logs:
 All sensor data is routed through a **Teensy 4.1**, allowing each run to be logged directly to an microSD card. The recorded data is then processed and analyzed in **MATLAB** to evaluate vehicle performance, CVT behavior, braking balance, and driver inputs.
 
 Live transmission of recorded data is available to the pit crew through the usage of a XBee RF Module and supporting components.
+
+
+## Using this repository
+
+This repo uses PlatformIO to manage files and libraries for the Teensy 4.1. After install and creating a project, the platformio.ini file ensures that everyone is building with the same libraries.
+
+NEW CONTRIBUTORS >> See .github/CONTRIBUTING.md
+- Must be a merge branch (no commit to main)
+- Must compile cleanly according to .github/workflows/ci.yml
+
+File Structure:
+
+|--src
+|  |
+|  |--teensyWhite       // Source folders for each Teensy
+|  |  | ...
+|  |--teensyBlue        // Each should contain a main.cpp
+|  |  | ...
+|  |--teensyOrange
+|  |  | ...
+|  |- daq_architecture.md   // Layout of the teensys and sensors
+|
+|--include          // UNUSED (for now)
+|--lib              // UNUSED (for now)
+|--test             // UNUSED (for now)
+|
+|--.github
+|  |
+|  |--workflows
+|  |  |
+|  |  |-ci.yml          // CI used by github (must pass before pull request)
+|  |
+|  |-COTNRIBUTING.md    // rules for contributing
+|  |
+|  |-file_header_template.h // header template for source files
+|
+|-platformio.ini            // contains build configuration for the project
+
+## Good to Know
+
+CI actions run on linux, which is case sensitive. An "include <Can_Bus.h>" for a file can_bus.h might compile on Windows but will fail the CI check.
+
+To build a version:
+- Make sure you have the latest files
+- > pio run -e [teensyColor] -t upload
+
+To compile w/o building:
+> pio run

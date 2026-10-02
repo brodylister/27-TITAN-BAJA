@@ -37,6 +37,8 @@ Live transmission of recorded data is available to the pit crew through the usag
 This repo uses PlatformIO to manage files and libraries for the Teensy 4.1. After install and creating a project, the platformio.ini file ensures that everyone is building with the same libraries.
 
 NEW CONTRIBUTORS >> See .github/CONTRIBUTING.md
+- Must be a merge branch (no commit to main)
+- Must compile cleanly according to .github/workflows/ci.yml
 
 File Structure:
 
@@ -65,3 +67,14 @@ File Structure:
 |  |-file_header_template.h // header template for source files
 |
 |-platformio.ini            // contains build configuration for the project
+
+## Good to Know
+
+CI actions run on linux, which is case sensitive. An "include <Can_Bus.h>" for a file can_bus.h might compile on Windows but will fail the CI check.
+
+To build a version:
+- Make sure you have the latest files
+- > pio run -e [teensyColor] -t upload
+
+To compile w/o building:
+> pio run

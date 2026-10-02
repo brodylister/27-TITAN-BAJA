@@ -1,0 +1,55 @@
+name: CI
+
+# Runs on every push and every pull request targeting main.
+# Catches compile errors and common bugs before code is merged.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build (PlatformIO / Teensy 4.1)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python (required by PlatformIO)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+
+      # Adjust "teensy41" if your platformio.ini env is named differently.
+      - name: Build firmware
+        run: pio run -e teensy41
+
+  static-analysis:
+    name: Static analysis (cppcheck)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Install cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+
+      # --error-exitcode=1 makes the job fail (red X) if cppcheck finds real issues,
+      # not just style nits. Adjust src/include paths to match your repo layout.
+      - name: Run cppcheck
+        run: |
+          cppcheck --enable=warning,performance,portability \
+                    --inline-suppr \
+                    --error-exitcode=1 \
+                    -I include \
+                    src/

@@ -41,7 +41,7 @@ NEW CONTRIBUTORS >> See .github/CONTRIBUTING.md
 - Must compile cleanly according to .github/workflows/ci.yml
 
 File Structure:
-
+```
 |--src
 |  |
 |  |--teensyWhite       // Source folders for each Teensy
@@ -67,7 +67,7 @@ File Structure:
 |  |-file_header_template.h // header template for source files
 |
 |-platformio.ini            // contains build configuration for the project
-
+```
 ## Good to Know
 
 CI actions run on linux, which is case sensitive. An "include <Can_Bus.h>" for a file can_bus.h might compile on Windows but will fail the CI check.
